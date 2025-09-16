@@ -14,7 +14,6 @@ caps_lock_speed = 1   # Speed when Caps Lock is on (slow)
 normal_speed = 12      # Speed when Caps Lock is off and Shift not held (normal)
 fast_speed = 4       # Speed when Shift is held (fast)
 scroll_speed = 30
-fast_scroll_speed = 100  # Speed when Shift is held (fast scroll)
 
 # Double-click settings
 double_click_delay = 0.3  # Time window for double-click in seconds
@@ -42,8 +41,7 @@ ACTION_KEYNAMES = {
     'click_right': 'num 9',
     'click_middle': 'num 2',
     'scroll_down': 'num 1',
-    'scroll_up': 'num 3',
-    'shift': 'shift'
+    'scroll_up': 'num 3'
 }
 
 # Track movement key states
@@ -56,8 +54,7 @@ key_states = {
     'click_right': False,
     'click_middle': False,
     'scroll_up': False,
-    'scroll_down': False,
-    'shift': False
+    'scroll_down': False
 }
 
 # Track double-click timing
@@ -128,11 +125,11 @@ def double_click(button):
         user32.mouse_event(0x0008, 0, 0, 0, 0)  # Right down
         user32.mouse_event(0x0010, 0, 0, 0, 0)  # Right up
 
-def scroll_mouse(direction, speed=scroll_speed):
+def scroll_mouse(direction):
     if direction == 'up':
-        user32.mouse_event(0x0800, 0, 0, speed, 0)  # Wheel up
+        user32.mouse_event(0x0800, 0, 0, scroll_speed, 0)  # Wheel up
     elif direction == 'down':
-        user32.mouse_event(0x0800, 0, 0, -speed, 0)  # Wheel down
+        user32.mouse_event(0x0800, 0, 0, -scroll_speed, 0)  # Wheel down
 
 def handle_action(action, is_down):
     if not program_active:
@@ -176,8 +173,6 @@ def handle_action(action, is_down):
             if key_states['click_middle']:
                 click_mouse('middle', False)
                 key_states['click_middle'] = False
-    elif action == 'shift':
-        key_states['shift'] = is_down
 
 def register_listeners():
     global listeners_registered, listener_handlers
@@ -214,7 +209,7 @@ def mouse_control_loop():
         else:
             try:
                 # keyboard.is_pressed handles either Shift key
-                current_speed = fast_speed if key_states['shift'] else normal_speed
+                current_speed = fast_speed if keyboard.is_pressed('shift') else normal_speed
             except Exception:
                 # Fallback to normal if detection fails
                 current_speed = normal_speed
@@ -235,28 +230,12 @@ def mouse_control_loop():
         
         # Handle continuous scrolling
         if key_states['scroll_up']:
-            try:
-                if key_states['shift']:
-                    scroll_mouse('up', fast_scroll_speed)
-                    time.sleep(0.01)
-                else:
-                    scroll_mouse('up')
-                    time.sleep(0.05)
-            except Exception:
-                scroll_mouse('up')
-                time.sleep(0.05)
+            scroll_mouse('up')
+            time.sleep(0.05)
             
         if key_states['scroll_down']:
-            try:
-                if key_states['shift']:
-                    scroll_mouse('down', fast_scroll_speed)
-                    time.sleep(0.01)
-                else:
-                    scroll_mouse('down')
-                    time.sleep(0.05)
-            except Exception:
-                scroll_mouse('down')
-                time.sleep(0.05)
+            scroll_mouse('down')
+            time.sleep(0.05)
         
         time.sleep(0.01)
 
