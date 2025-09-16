@@ -15,7 +15,7 @@ caps_lock_speed = 1   # Speed when Caps Lock is on (slow)
 normal_speed = 12      # Speed when Caps Lock is off and Shift not held (normal)
 fast_speed = 4       # Speed when Shift is held (fast)
 normal_scroll_speed = 30
-fast_scroll_speed = 120  # Faster scroll speed when Shift is held
+fast_scroll_speed = 60  # Faster scroll speed when Shift is held
 
 # Double-click settings
 double_click_delay = 0.3  # Time window for double-click in seconds
@@ -197,11 +197,13 @@ def register_listeners():
             listener_handlers.append(h1)
             listener_handlers.append(h2)
         
-        # Register shift key listeners
-        h_shift_down = keyboard.hook_key('shift', update_shift_state, suppress=False)
-        h_shift_up = keyboard.hook_key('shift', update_shift_state, suppress=False)
-        listener_handlers.append(h_shift_down)
-        listener_handlers.append(h_shift_up)
+        # Register shift key listeners for both left and right shift
+        h_left_shift_down = keyboard.on_press_key('left shift', update_shift_state, suppress=False)
+        h_left_shift_up = keyboard.on_release_key('left shift', update_shift_state, suppress=False)
+        h_right_shift_down = keyboard.on_press_key('right shift', update_shift_state, suppress=False)
+        h_right_shift_up = keyboard.on_release_key('right shift', update_shift_state, suppress=False)
+        
+        listener_handlers.extend([h_left_shift_down, h_left_shift_up, h_right_shift_down, h_right_shift_up])
         
         listeners_registered = True
 
@@ -219,6 +221,9 @@ def unregister_listeners():
 
 # Mouse control function
 def mouse_control_loop():
+    last_scroll_time = time.time()
+    scroll_interval = 0.05  # Time between scroll events
+    
     while True:
         if not program_active:
             time.sleep(0.1)
@@ -252,13 +257,24 @@ def mouse_control_loop():
             move_mouse(dx, dy)
         
         # Handle continuous scrolling with dynamic speed
-        if key_states['scroll_up']:
-            scroll_mouse('up', current_scroll_speed)
-            time.sleep(0.05)
-            
-        if key_states['scroll_down']:
-            scroll_mouse('down', current_scroll_speed)
-            time.sleep(0.05)
+        current_time = time.time()
+        if current_time - last_scroll_time >= scroll_interval:
+            # Check shift state again right before scrolling to ensure it's up-to-date
+            with shift_lock:
+                scroll_shift_state = shift_pressed
+                
+            if is_caps_lock_on():
+                scroll_speed = normal_scroll_speed
+            else:
+                scroll_speed = fast_scroll_speed if scroll_shift_state else normal_scroll_speed
+                
+            if key_states['scroll_up']:
+                scroll_mouse('up', scroll_speed)
+                last_scroll_time = current_time
+                
+            if key_states['scroll_down']:
+                scroll_mouse('down', scroll_speed)
+                last_scroll_time = current_time
         
         time.sleep(0.01)
 
