@@ -1,0 +1,17 @@
+Get-ChildItem -Recurse -File | Where-Object { $_.FullName -notmatch "\\node_modules\\" -and $_.FullName -notmatch "\\public\\" -and $_.Name -ne "project_dump.txt" -and $_.Name -ne "package-lock.json" } | ForEach-Object { "===== FILE: $($_.FullName) ====="; Get-Content $_.FullName -ErrorAction SilentlyContinue; "" } > project_dump.txt
+
+
+
+universal
+
+Get-ChildItem -Recurse -File |
+Where-Object {
+    $_.FullName -notmatch "\\node_modules\\|\\public\\|\\.git\\|\\dist\\|\\build\\|\\target\\|\\out\\|__pycache__|\\.cache" -and
+    $_.Extension -notin ".class",".exe",".dll",".o",".log" -and
+    $_.Name -notin "project_dump.txt","package-lock.json"
+} |
+ForEach-Object {
+    "===== FILE: $($_.FullName) ====="
+    Get-Content $_.FullName -ErrorAction SilentlyContinue
+    ""
+} > project_dump.txt
