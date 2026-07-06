@@ -51,6 +51,7 @@ class MousePreviewApp:
         self.drag_off_x = 0
         self.drag_off_y = 0
         self._preview_image_id = None
+        self._hidden_by_us = False
 
         self._build_preview()
         if self.window_x is not None and self.window_y is not None:
@@ -414,6 +415,16 @@ class MousePreviewApp:
                 top = virt["top"] + virt["height"] - cap_sz
 
         bbox = (int(left), int(top), int(right), int(bottom))
+
+        over = (self.root.winfo_x() <= mx <= self.root.winfo_x() + self.root.winfo_width()
+                and self.root.winfo_y() <= my <= self.root.winfo_y() + self.root.winfo_height())
+        if over and not self._hidden_by_us:
+            self._hidden_by_us = True
+            self.root.withdraw()
+        elif not over and self._hidden_by_us:
+            self._hidden_by_us = False
+            self.root.deiconify()
+
         screenshot = self.sct.grab(bbox)
         img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
 
