@@ -109,10 +109,12 @@ class MousePreviewApp:
             json.dump(data, f, indent=2)
 
     def _overlaps_any_monitor(self, x, y, w, h):
+        if w <= 0 or h <= 0:
+            return False
         r = (x, y, x + w, y + h)
         for m in getattr(self, '_monitors', []):
             mr = (m["left"], m["top"], m["left"] + m["width"], m["top"] + m["height"])
-            if r[0] < mr[2] and r[2] > mr[0] and r[1] < mr[3] and r[3] > mr[1]:
+            if r[0] <= mr[2] and r[2] >= mr[0] and r[1] <= mr[3] and r[3] >= mr[1]:
                 return True
         return False
 
@@ -150,6 +152,7 @@ class MousePreviewApp:
         hc.bind("<B1-Motion>", self._h_drag_move)
         hc.bind("<ButtonRelease-1>", self._h_drag_end)
         hc.bind("<Button-3>", lambda e: self._toggle_settings())
+        self.handle.protocol("WM_DELETE_WINDOW", self._quit)
 
     def _h_drag_start(self, e):
         self._dragging = True
