@@ -5,7 +5,7 @@ Usage:
     python mouse_preview.py
 
 Right-click the preview  →  open settings (size, position, zoom)
-Left-click & drag       →  reposition window
+Drag the blue handle     →  reposition window (when overlay is hidden)
 Ctrl+Alt+Scroll         →  resize window
 Shift+Alt+Scroll        →  change zoom
 Press Escape            →  quit
@@ -24,6 +24,7 @@ from pynput import keyboard, mouse
 
 __version__ = "1.1.0"
 APP_NAME = "Dr Broken Display"
+_HANDLE_SZ = 24
 
 
 class MousePreviewApp:
@@ -52,11 +53,9 @@ class MousePreviewApp:
         self.drag_off_y = 0
         self._preview_image_id = None
         self._hidden_by_us = False
-        self._hidden_x = 0
-        self._hidden_y = 0
 
-        self._build_preview()
         self._build_handle()
+        self._build_preview()
         if self.window_x is not None and self.window_y is not None:
             self.root.geometry(f"+{self.window_x}+{self.window_y}")
         else:
@@ -98,6 +97,38 @@ class MousePreviewApp:
         with open(self.settings_file, "w") as f:
             json.dump(data, f, indent=2)
 
+    # ── handle (always-visible drag square) ────────────────
+
+    def _build_handle(self):
+        self.handle = tk.Toplevel(self.root)
+        self.handle.overrideredirect(True)
+        self.handle.attributes("-topmost", True)
+        self.handle.configure(bg="#3377ee")
+        self.handle.geometry(f"{_HANDLE_SZ}x{_HANDLE_SZ}")
+        self.handle.withdraw()
+
+        self.handle.bind("<Button-1>", self._h_drag_start)
+        self.handle.bind("<B1-Motion>", self._h_drag_move)
+        self.handle.bind("<ButtonRelease-1>", self._h_drag_end)
+        self.handle.bind("<Button-3>", lambda e: self._toggle_settings())
+
+    def _h_drag_start(self, e):
+        self.drag_off_x = e.x
+        self.drag_off_y = e.y
+
+    def _h_drag_move(self, e):
+        dx = e.x - self.drag_off_x
+        dy = e.y - self.drag_off_y
+        hx = self.handle.winfo_x() + dx
+        hy = self.handle.winfo_y() + dy
+        self.handle.geometry(f"+{hx}+{hy}")
+        self.root.geometry(f"+{hx + _HANDLE_SZ - self.preview_size}+{hy + _HANDLE_SZ - self.preview_size}")
+
+    def _h_drag_end(self, e):
+        self.window_x = self.root.winfo_x()
+        self.window_y = self.root.winfo_y()
+        self.save_settings()
+
     # ── UI construction ───────────────────────────────────
 
     def _build_preview(self):
@@ -113,9 +144,6 @@ class MousePreviewApp:
         self.canvas.pack()
 
         self.canvas.bind("<Button-3>", lambda e: self._toggle_settings())
-        self.canvas.bind("<Button-1>", self._drag_start)
-        self.canvas.bind("<B1-Motion>", self._drag_move)
-        self.canvas.bind("<ButtonRelease-1>", self._drag_end)
 
         self._build_settings_panel()
 
@@ -129,7 +157,6 @@ class MousePreviewApp:
         frame_opt = {"bg": bg}
         label_opt = {"bg": bg, "fg": fg, "font": ("Segoe UI", 9), "width": 8, "anchor": "w"}
 
-        # title
         tk.Label(
             self.settings_frame,
             text=APP_NAME,
@@ -142,7 +169,6 @@ class MousePreviewApp:
             fill="x", padx=8, pady=4
         )
 
-        # size
         sf = tk.Frame(self.settings_frame, **frame_opt)
         sf.pack(fill="x", padx=10, pady=2)
         tk.Label(sf, **label_opt, text="Size:").pack(side="left")
@@ -157,7 +183,6 @@ class MousePreviewApp:
         c.pack(side="right")
         c.bind("<<ComboboxSelected>>", self._on_size_change)
 
-        # position
         pf = tk.Frame(self.settings_frame, **frame_opt)
         pf.pack(fill="x", padx=10, pady=2)
         tk.Label(pf, **label_opt, text="Position:").pack(side="left")
@@ -165,19 +190,13 @@ class MousePreviewApp:
         c = ttk.Combobox(
             pf,
             textvariable=self.pos_var,
-            values=[
-                "bottom-left",
-                "bottom-right",
-                "top-left",
-                "top-right",
-            ],
+            values=["bottom-left", "bottom-right", "top-left", "top-right"],
             width=13,
             state="readonly",
         )
         c.pack(side="right")
         c.bind("<<ComboboxSelected>>", self._on_position_change)
 
-        # zoom
         zf = tk.Frame(self.settings_frame, **frame_opt)
         zf.pack(fill="x", padx=10, pady=2)
         tk.Label(zf, **label_opt, text="Zoom:").pack(side="left")
@@ -192,7 +211,6 @@ class MousePreviewApp:
         c.pack(side="right")
         c.bind("<<ComboboxSelected>>", self._on_zoom_change)
 
-        # close + quit
         btn_row = tk.Frame(self.settings_frame, bg=bg)
         btn_row.pack(fill="x", padx=10, pady=(4, 10))
         tk.Button(
@@ -221,44 +239,6 @@ class MousePreviewApp:
             activeforeground="#faa",
             cursor="hand2",
         ).pack(side="left")
-
-    _HANDLE_SIZE = 14
-
-    def _build_handle(self):
-        self.handle = tk.Toplevel(self.root)
-        self.handle.overrideredirect(True)
-        self.handle.attributes("-topmost", True)
-        self.handle.configure(bg="#4488ff", highlightthickness=2, highlightbackground="#66aaff")
-        self.handle.geometry(f"{self._HANDLE_SIZE}x{self._HANDLE_SIZE}")
-
-        self.handle.bind("<Button-1>", self._handle_drag_start)
-        self.handle.bind("<B1-Motion>", self._handle_drag_move)
-        self.handle.bind("<ButtonRelease-1>", self._handle_drag_end)
-        self.handle.bind("<Button-3>", lambda e: self._toggle_settings())
-        self._update_handle_position()
-
-    def _update_handle_position(self):
-        hx = self.root.winfo_x() + self.root.winfo_width() - self._HANDLE_SIZE
-        hy = self.root.winfo_y() + self.root.winfo_height() - self._HANDLE_SIZE
-        self.handle.geometry(f"+{hx}+{hy}")
-        self.handle.lift()
-
-    def _handle_drag_start(self, e):
-        self._drag_off_x = e.x
-        self._drag_off_y = e.y
-
-    def _handle_drag_move(self, e):
-        dx = e.x - self._drag_off_x
-        dy = e.y - self._drag_off_y
-        new_x = self.root.winfo_x() + dx
-        new_y = self.root.winfo_y() + dy
-        self.root.geometry(f"+{new_x}+{new_y}")
-        self._update_handle_position()
-
-    def _handle_drag_end(self, e):
-        self.window_x = self.root.winfo_x()
-        self.window_y = self.root.winfo_y()
-        self.save_settings()
 
     # ── window geometry ───────────────────────────────────
 
@@ -312,22 +292,6 @@ class MousePreviewApp:
         self.root.geometry(f"+{x}+{y}")
         self.window_x = x
         self.window_y = y
-        self._update_handle_position()
-
-    def _drag_start(self, e):
-        self.drag_off_x = e.x
-        self.drag_off_y = e.y
-
-    def _drag_move(self, e):
-        x = self.root.winfo_x() + e.x - self.drag_off_x
-        y = self.root.winfo_y() + e.y - self.drag_off_y
-        self.root.geometry(f"+{x}+{y}")
-        self.window_x = x
-        self.window_y = y
-        self._update_handle_position()
-
-    def _drag_end(self, e):
-        self.save_settings()
 
     # ── settings toggles ──────────────────────────────────
 
@@ -459,18 +423,28 @@ class MousePreviewApp:
 
         bbox = (int(left), int(top), int(right), int(bottom))
 
-        over = (self.root.winfo_x() <= mx <= self.root.winfo_x() + self.root.winfo_width()
-                and self.root.winfo_y() <= my <= self.root.winfo_y() + self.root.winfo_height())
-        if over and not self._hidden_by_us:
+        wx = self.root.winfo_x()
+        wy = self.root.winfo_y()
+        ww = self.root.winfo_width()
+        wh = self.root.winfo_height()
+        in_body = (wx <= mx <= wx + ww and wy <= my <= wy + wh)
+
+        if in_body and not self._hidden_by_us:
             self._hidden_by_us = True
-            self._hidden_x = self.root.winfo_x()
-            self._hidden_y = self.root.winfo_y()
-            self.root.withdraw()
-        elif not over and self._hidden_by_us:
+            self._hidden_pos = (wx, wy)
+            self.root.geometry("+99999+99999")
+            hx = wx + self.preview_size - _HANDLE_SZ
+            hy = wy + self.preview_size - _HANDLE_SZ
+            self.handle.geometry(f"+{hx}+{hy}")
+            self.handle.deiconify()
+        elif not in_body and self._hidden_by_us:
             self._hidden_by_us = False
-            self.root.geometry(f"+{self._hidden_x}+{self._hidden_y}")
-            self.root.deiconify()
-            self._update_handle_position()
+            hx = self.handle.winfo_x()
+            hy = self.handle.winfo_y()
+            mx = hx + _HANDLE_SZ - self.preview_size
+            my = hy + _HANDLE_SZ - self.preview_size
+            self.root.geometry(f"+{mx}+{my}")
+            self.handle.withdraw()
 
         screenshot = self.sct.grab(bbox)
         img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
