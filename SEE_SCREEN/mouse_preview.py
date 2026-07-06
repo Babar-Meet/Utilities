@@ -55,6 +55,8 @@ class MousePreviewApp:
         self._hidden_by_us = False
         self._hide_area = (0, 0, 0, 0)
         self._dragging = False
+        self._drag_pos = (0, 0)
+        self._save_counter = 0
 
         self._build_handle()
         self._build_preview()
@@ -69,6 +71,7 @@ class MousePreviewApp:
         self.root.after(33, self._update_preview)
 
         self.root.bind("<Escape>", lambda e: self._quit())
+        self.root.bind("<Alt-F4>", lambda e: self._quit())
         self.root.protocol("WM_DELETE_WINDOW", self._quit)
         self.root.mainloop()
 
@@ -158,6 +161,7 @@ class MousePreviewApp:
         dy = e.y - self.drag_off_y
         hx = self.handle.winfo_x() + dx
         hy = self.handle.winfo_y() + dy
+        self._drag_pos = (hx, hy)
         self.handle.geometry(f"+{hx}+{hy}")
         self.root.geometry(f"+{hx + _HANDLE_SZ - self.preview_size}+{hy + _HANDLE_SZ - self.preview_size}")
         self._hide_area = (hx + _HANDLE_SZ - self.preview_size, hy + _HANDLE_SZ - self.preview_size,
@@ -165,8 +169,9 @@ class MousePreviewApp:
 
     def _h_drag_end(self, e):
         self._dragging = False
-        self.window_x = self.root.winfo_x()
-        self.window_y = self.root.winfo_y()
+        hx, hy = self._drag_pos
+        self.window_x = hx + _HANDLE_SZ - self.preview_size
+        self.window_y = hy + _HANDLE_SZ - self.preview_size
         self.save_settings()
 
     # ── UI construction ───────────────────────────────────
@@ -521,6 +526,11 @@ class MousePreviewApp:
             self.canvas.tag_lower("preview")
         except Exception:
             pass
+
+        self._save_counter += 1
+        if self._save_counter >= 100:
+            self._save_counter = 0
+            self.save_settings()
 
         self.root.after(33, self._update_preview)
 
