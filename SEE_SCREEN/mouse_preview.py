@@ -105,14 +105,34 @@ class MousePreviewApp:
         self.handle = tk.Toplevel(self.root)
         self.handle.overrideredirect(True)
         self.handle.attributes("-topmost", True)
-        self.handle.configure(bg="#3377ee")
+        self.handle.attributes("-alpha", 0.85)
+        self.handle.configure(bg="#2a2a2a")
         self.handle.geometry(f"{_HANDLE_SZ}x{_HANDLE_SZ}")
         self.handle.withdraw()
 
-        self.handle.bind("<Button-1>", self._h_drag_start)
-        self.handle.bind("<B1-Motion>", self._h_drag_move)
-        self.handle.bind("<ButtonRelease-1>", self._h_drag_end)
-        self.handle.bind("<Button-3>", lambda e: self._toggle_settings())
+        hc = tk.Canvas(self.handle, width=_HANDLE_SZ, height=_HANDLE_SZ,
+                       highlightthickness=0, bg="#2a2a2a", cursor="fleur", bd=0)
+        hc.pack()
+
+        s = _HANDLE_SZ
+        hc.create_rectangle(1, 1, s - 1, s - 1, outline="#555", width=1)
+
+        dot_r = 1.5
+        cols, rows = 2, 3
+        gap_x, gap_y = 10, 8
+        ox = (s - gap_x * (cols - 1)) // 2
+        oy = (s - gap_y * (rows - 1)) // 2
+        for row in range(rows):
+            for col in range(cols):
+                cx = ox + col * gap_x
+                cy = oy + row * gap_y
+                hc.create_oval(cx - dot_r, cy - dot_r, cx + dot_r, cy + dot_r,
+                               fill="#999", outline="")
+
+        hc.bind("<Button-1>", self._h_drag_start)
+        hc.bind("<B1-Motion>", self._h_drag_move)
+        hc.bind("<ButtonRelease-1>", self._h_drag_end)
+        hc.bind("<Button-3>", lambda e: self._toggle_settings())
 
     def _h_drag_start(self, e):
         self._dragging = True
