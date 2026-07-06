@@ -82,14 +82,20 @@ class MousePreviewApp:
         if os.path.exists(self.settings_file):
             try:
                 with open(self.settings_file) as f:
-                    d = json.load(f)
+                    parsed = json.load(f)
+                if isinstance(parsed, dict):
+                    d = parsed
             except Exception:
                 pass
-        self.preview_size = d.get("preview_size", 310)
-        self.position = d.get("position", "bottom-left")
-        self.zoom = d.get("zoom", 1.0)
-        self.window_x = d.get("window_x")
-        self.window_y = d.get("window_y")
+        raw_size = d.get("preview_size", 310)
+        self.preview_size = max(50, min(500, int(raw_size))) if isinstance(raw_size, (int, float)) else 310
+        self.position = d.get("position") or "bottom-left"
+        raw_zoom = d.get("zoom", 1.0)
+        self.zoom = float(raw_zoom) if isinstance(raw_zoom, (int, float)) and raw_zoom > 0 else 1.0
+        raw_x = d.get("window_x")
+        raw_y = d.get("window_y")
+        self.window_x = int(raw_x) if isinstance(raw_x, (int, float)) else None
+        self.window_y = int(raw_y) if isinstance(raw_y, (int, float)) else None
         if self.window_x is not None and self.window_y is not None:
             if not self._overlaps_any_monitor(self.window_x, self.window_y,
                                               self.preview_size, self.preview_size):
@@ -105,6 +111,7 @@ class MousePreviewApp:
         if self.window_x is not None and self.window_y is not None:
             data["window_x"] = self.window_x
             data["window_y"] = self.window_y
+        os.makedirs(os.path.dirname(self.settings_file), exist_ok=True)
         with open(self.settings_file, "w") as f:
             json.dump(data, f, indent=2)
 
@@ -158,6 +165,7 @@ class MousePreviewApp:
         self._dragging = True
         self.drag_off_x = e.x
         self.drag_off_y = e.y
+        self._drag_pos = (self.handle.winfo_x(), self.handle.winfo_y())
 
     def _h_drag_move(self, e):
         dx = e.x - self.drag_off_x
@@ -376,7 +384,7 @@ class MousePreviewApp:
 
     # ── global hotkeys: Ctrl+Alt+Scroll (size), Shift+Alt+Scroll (zoom) ─
 
-    ZOOM_STEPS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0]
+    ZOOM_STEPS = [0.25, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 4.0]
 
     def _start_global_listeners(self):
         self._ctrl_held = False
