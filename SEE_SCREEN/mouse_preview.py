@@ -53,6 +53,7 @@ class MousePreviewApp:
         self.drag_off_y = 0
         self._preview_image_id = None
         self._hidden_by_us = False
+        self._hide_area = (0, 0, 0, 0)
 
         self._build_handle()
         self._build_preview()
@@ -123,6 +124,8 @@ class MousePreviewApp:
         hy = self.handle.winfo_y() + dy
         self.handle.geometry(f"+{hx}+{hy}")
         self.root.geometry(f"+{hx + _HANDLE_SZ - self.preview_size}+{hy + _HANDLE_SZ - self.preview_size}")
+        self._hide_area = (hx + _HANDLE_SZ - self.preview_size, hy + _HANDLE_SZ - self.preview_size,
+                           self.preview_size, self.preview_size)
 
     def _h_drag_end(self, e):
         self.window_x = self.root.winfo_x()
@@ -423,28 +426,27 @@ class MousePreviewApp:
 
         bbox = (int(left), int(top), int(right), int(bottom))
 
-        wx = self.root.winfo_x()
-        wy = self.root.winfo_y()
-        ww = self.root.winfo_width()
-        wh = self.root.winfo_height()
-        in_body = (wx <= mx <= wx + ww and wy <= my <= wy + wh)
-
-        if in_body and not self._hidden_by_us:
-            self._hidden_by_us = True
-            self._hidden_pos = (wx, wy)
-            self.root.geometry("+99999+99999")
-            hx = wx + self.preview_size - _HANDLE_SZ
-            hy = wy + self.preview_size - _HANDLE_SZ
-            self.handle.geometry(f"+{hx}+{hy}")
-            self.handle.deiconify()
-        elif not in_body and self._hidden_by_us:
-            self._hidden_by_us = False
+        if self._hidden_by_us:
+            ax, ay, aw, ah = self._hide_area
             hx = self.handle.winfo_x()
             hy = self.handle.winfo_y()
-            mx = hx + _HANDLE_SZ - self.preview_size
-            my = hy + _HANDLE_SZ - self.preview_size
-            self.root.geometry(f"+{mx}+{my}")
-            self.handle.withdraw()
+            in_zone = (ax <= mx <= ax + aw and ay <= my <= ay + ah) or \
+                      (hx <= mx <= hx + _HANDLE_SZ and hy <= my <= hy + _HANDLE_SZ)
+            if not in_zone:
+                self._hidden_by_us = False
+                self.root.geometry(f"+{hx + _HANDLE_SZ - self.preview_size}+{hy + _HANDLE_SZ - self.preview_size}")
+                self.handle.withdraw()
+        else:
+            wx = self.root.winfo_x()
+            wy = self.root.winfo_y()
+            ww = self.root.winfo_width()
+            wh = self.root.winfo_height()
+            if wx <= mx <= wx + ww and wy <= my <= wy + wh:
+                self._hidden_by_us = True
+                self._hide_area = (wx, wy, ww, wh)
+                self.root.geometry("+99999+99999")
+                self.handle.geometry(f"+{wx + ww - _HANDLE_SZ}+{wy + wh - _HANDLE_SZ}")
+                self.handle.deiconify()
 
         screenshot = self.sct.grab(bbox)
         img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
