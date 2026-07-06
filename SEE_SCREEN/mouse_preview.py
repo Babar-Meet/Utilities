@@ -62,6 +62,7 @@ class MousePreviewApp:
             self.root.geometry(f"+{self.window_x}+{self.window_y}")
         else:
             self._update_position()
+            self.save_settings()
 
         self._start_global_listeners()
 
@@ -99,14 +100,8 @@ class MousePreviewApp:
             "zoom": self.zoom,
         }
         if self.window_x is not None and self.window_y is not None:
-            try:
-                w = self.root.winfo_width()
-                h = self.root.winfo_height()
-                if w > 1 and h > 1 and self._overlaps_any_monitor(self.window_x, self.window_y, w, h):
-                    data["window_x"] = self.window_x
-                    data["window_y"] = self.window_y
-            except Exception:
-                pass
+            data["window_x"] = self.window_x
+            data["window_y"] = self.window_y
         with open(self.settings_file, "w") as f:
             json.dump(data, f, indent=2)
 
