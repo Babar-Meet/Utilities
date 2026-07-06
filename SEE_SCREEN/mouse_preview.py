@@ -86,6 +86,11 @@ class MousePreviewApp:
         self.zoom = d.get("zoom", 1.0)
         self.window_x = d.get("window_x")
         self.window_y = d.get("window_y")
+        if self.window_x is not None and self.window_y is not None:
+            if not self._overlaps_any_monitor(self.window_x, self.window_y,
+                                              self.preview_size, self.preview_size):
+                self.window_x = None
+                self.window_y = None
 
     def save_settings(self):
         data = {
@@ -94,10 +99,24 @@ class MousePreviewApp:
             "zoom": self.zoom,
         }
         if self.window_x is not None and self.window_y is not None:
-            data["window_x"] = self.window_x
-            data["window_y"] = self.window_y
+            try:
+                w = self.root.winfo_width()
+                h = self.root.winfo_height()
+                if w > 1 and h > 1 and self._overlaps_any_monitor(self.window_x, self.window_y, w, h):
+                    data["window_x"] = self.window_x
+                    data["window_y"] = self.window_y
+            except Exception:
+                pass
         with open(self.settings_file, "w") as f:
             json.dump(data, f, indent=2)
+
+    def _overlaps_any_monitor(self, x, y, w, h):
+        r = (x, y, x + w, y + h)
+        for m in getattr(self, '_monitors', []):
+            mr = (m["left"], m["top"], m["left"] + m["width"], m["top"] + m["height"])
+            if r[0] < mr[2] and r[2] > mr[0] and r[1] < mr[3] and r[3] > mr[1]:
+                return True
+        return False
 
     # ── handle (always-visible drag square) ────────────────
 
