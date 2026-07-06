@@ -54,6 +54,7 @@ class MousePreviewApp:
         self._preview_image_id = None
         self._hidden_by_us = False
         self._hide_area = (0, 0, 0, 0)
+        self._dragging = False
 
         self._build_handle()
         self._build_preview()
@@ -114,6 +115,7 @@ class MousePreviewApp:
         self.handle.bind("<Button-3>", lambda e: self._toggle_settings())
 
     def _h_drag_start(self, e):
+        self._dragging = True
         self.drag_off_x = e.x
         self.drag_off_y = e.y
 
@@ -128,6 +130,7 @@ class MousePreviewApp:
                            self.preview_size, self.preview_size)
 
     def _h_drag_end(self, e):
+        self._dragging = False
         self.window_x = self.root.winfo_x()
         self.window_y = self.root.winfo_y()
         self.save_settings()
@@ -426,7 +429,7 @@ class MousePreviewApp:
 
         bbox = (int(left), int(top), int(right), int(bottom))
 
-        if self._hidden_by_us:
+        if self._hidden_by_us and not self._dragging:
             ax, ay, aw, ah = self._hide_area
             hx = self.handle.winfo_x()
             hy = self.handle.winfo_y()
