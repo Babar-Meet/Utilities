@@ -52,8 +52,11 @@ class MousePreviewApp:
         self.drag_off_y = 0
         self._preview_image_id = None
         self._hidden_by_us = False
+        self._hidden_x = 0
+        self._hidden_y = 0
 
         self._build_preview()
+        self._build_handle()
         if self.window_x is not None and self.window_y is not None:
             self.root.geometry(f"+{self.window_x}+{self.window_y}")
         else:
@@ -219,6 +222,44 @@ class MousePreviewApp:
             cursor="hand2",
         ).pack(side="left")
 
+    _HANDLE_SIZE = 14
+
+    def _build_handle(self):
+        self.handle = tk.Toplevel(self.root)
+        self.handle.overrideredirect(True)
+        self.handle.attributes("-topmost", True)
+        self.handle.configure(bg="#4488ff", highlightthickness=2, highlightbackground="#66aaff")
+        self.handle.geometry(f"{self._HANDLE_SIZE}x{self._HANDLE_SIZE}")
+
+        self.handle.bind("<Button-1>", self._handle_drag_start)
+        self.handle.bind("<B1-Motion>", self._handle_drag_move)
+        self.handle.bind("<ButtonRelease-1>", self._handle_drag_end)
+        self.handle.bind("<Button-3>", lambda e: self._toggle_settings())
+        self._update_handle_position()
+
+    def _update_handle_position(self):
+        hx = self.root.winfo_x() + self.root.winfo_width() - self._HANDLE_SIZE
+        hy = self.root.winfo_y() + self.root.winfo_height() - self._HANDLE_SIZE
+        self.handle.geometry(f"+{hx}+{hy}")
+        self.handle.lift()
+
+    def _handle_drag_start(self, e):
+        self._drag_off_x = e.x
+        self._drag_off_y = e.y
+
+    def _handle_drag_move(self, e):
+        dx = e.x - self._drag_off_x
+        dy = e.y - self._drag_off_y
+        new_x = self.root.winfo_x() + dx
+        new_y = self.root.winfo_y() + dy
+        self.root.geometry(f"+{new_x}+{new_y}")
+        self._update_handle_position()
+
+    def _handle_drag_end(self, e):
+        self.window_x = self.root.winfo_x()
+        self.window_y = self.root.winfo_y()
+        self.save_settings()
+
     # ── window geometry ───────────────────────────────────
 
     def _rebuild_layout(self):
@@ -271,6 +312,7 @@ class MousePreviewApp:
         self.root.geometry(f"+{x}+{y}")
         self.window_x = x
         self.window_y = y
+        self._update_handle_position()
 
     def _drag_start(self, e):
         self.drag_off_x = e.x
@@ -282,6 +324,7 @@ class MousePreviewApp:
         self.root.geometry(f"+{x}+{y}")
         self.window_x = x
         self.window_y = y
+        self._update_handle_position()
 
     def _drag_end(self, e):
         self.save_settings()
@@ -420,10 +463,14 @@ class MousePreviewApp:
                 and self.root.winfo_y() <= my <= self.root.winfo_y() + self.root.winfo_height())
         if over and not self._hidden_by_us:
             self._hidden_by_us = True
+            self._hidden_x = self.root.winfo_x()
+            self._hidden_y = self.root.winfo_y()
             self.root.withdraw()
         elif not over and self._hidden_by_us:
             self._hidden_by_us = False
+            self.root.geometry(f"+{self._hidden_x}+{self._hidden_y}")
             self.root.deiconify()
+            self._update_handle_position()
 
         screenshot = self.sct.grab(bbox)
         img = Image.frombytes("RGB", screenshot.size, screenshot.rgb)
@@ -468,6 +515,10 @@ class MousePreviewApp:
 
     def _quit(self):
         self.save_settings()
+        try:
+            self.handle.destroy()
+        except Exception:
+            pass
         try:
             self._kb_listener.stop()
         except Exception:
