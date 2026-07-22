@@ -89,7 +89,7 @@ class MousePreviewApp:
                 pass
         raw_size = d.get("preview_size", 310)
         self.preview_size = max(50, min(500, int(raw_size))) if isinstance(raw_size, (int, float)) else 310
-        self.position = d.get("position") or "bottom-left"
+        self.position = d.get("position") or "top-left"
         raw_zoom = d.get("zoom", 1.0)
         self.zoom = float(raw_zoom) if isinstance(raw_zoom, (int, float)) and raw_zoom > 0 else 1.0
         raw_x = d.get("window_x")
