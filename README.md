@@ -16,14 +16,15 @@ This project bundles several standalone Windows tools that solve specific repeti
 
 ## Features
 
-- **Numpad as Mouse** — Control the mouse cursor using the numeric keypad (toggle on/off with F9). Supports configurable speed tiers (Caps Lock = slow, Shift = fast), scrolling, clicking, and double-click detection.
-- **Fail-safe Numpad Mouse** — Enhanced version of the above with file logging, health monitoring, automatic state recovery, and GUI crash recovery.
+- **Numpad as Mouse** — Control the mouse cursor using the numeric keypad (toggle on/off with F9). Three hardcoded speed tiers (Caps Lock = 1 px/step, Shift = 4 px/step, no modifier = 12 px/step), scrolling, clicking, and double-click detection.
+- **Fail-safe Numpad Mouse** — Same key map, except scroll speed is a fixed 30 per step with no Shift modifier. Adds file logging, health monitoring, automatic state recovery, and GUI crash recovery.
 - **Dr Broken Display** — Real-time magnified preview of the area under the cursor, shown in a configurable corner window (size, zoom, position adjustable). Supports keyboard shortcuts for quick resize/zoom changes.
-- **Mouse Combo (House of Death)** — Bind a hotkey to perform a rapid sequence of 3 left clicks + 1 right click. Used for game automation.
+- **Mouse Combo (House of Death)** — Bind a hotkey to perform a rapid sequence of 2 left clicks + 1 right click. Used for game automation.
 - **Mouse Spammer (Subnortica)** — Toggle automatic left/right mouse clicking on/off via configurable hotkeys. Shows a semi-transparent overlay with current status.
 - **File Creator & Editor Launcher** — AutoHotkey script that creates a new file from Windows Explorer and opens it in VS Code or Windsurf IDE (Win+N / Win+Shift+N). Also opens the selected file in the editor (Win+O / Win+Shift+O).
 - **System Power Shortcuts** — Batch scripts for shutdown, restart, sleep, and logoff. Includes an interactive text-menu wrapper.
-- **Project Code Dumper** — PowerShell one-liner that recursively concatenates all source files into a single text file (excluding generated/vendor directories), suitable for feeding into an LLM context.
+- **Project Code Dumper** — Two PowerShell pipelines in `GetProjectCode/command.txt` that recursively concatenate source files into a single `project_dump.txt`. Line 1 is a one-liner excluding only `node_modules` and `public`; lines 7-17 are a multi-line variant that also excludes `.git`, `dist`, `build`, `target`, `out`, `__pycache__` and `.cache`. Run either from the root of the project you want dumped.
+- **Clock & Battery Overlay** — A borderless, always-on-top desktop overlay showing the 12-hour time and the battery percentage, refreshed once a second. Draggable with the left mouse button.
 
 ---
 
@@ -41,7 +42,7 @@ This project bundles several standalone Windows tools that solve specific repeti
 | Config / Persistence | JSON files                                                  |
 | Testing (pytest)     | `pytest`, `unittest.mock`                                   |
 | Testing (unittest)   | Python `unittest`                                           |
-| Runtime              | Python 3.14+, AutoHotkey v1.1+, Windows CMD                 |
+| Runtime              | Python 3.8+ (developed against 3.14), AutoHotkey v1.1+, Windows CMD                 |
 | Platform             | Windows only                                                |
 
 ---
@@ -50,22 +51,29 @@ This project bundles several standalone Windows tools that solve specific repeti
 
 ```
 Utilities/
-├── .gitignore                          # Ignores chat_openrouter.py
-├── LICENSE                             # Proprietary license
-├── README.md                           # This file
+├── .gitignore                          # Ignores chat_openrouter.py and .opencode/
+├── LICENSE                           # Proprietary license
+├── Project_Tech_Stack_Report.doc     # Tracked tech-stack report (legacy .doc)
+├── Project_Tech_Stack_Reportf.docx   # Tracked tech-stack report (.docx; the stray "f" is the real filename)
+├── README.md                         # This file                           # This file
 │
 ├── CreateOpenAKH/
 │   └── main.ahk                        # AutoHotkey: file creation + editor launcher
 │
+├── BatteryChargeIndigater/
+│   ├── README.md                       # What it is, how to run it, verified behaviour
+│   ├── Run_clock.bat                   # Windows launcher
+│   └── Time_Battry_info.py              # Tkinter overlay: 12-hour clock + battery percent
+│
 ├── Games/
 │   ├── House of death/
 │   │   ├── mouse_combo_config.json     # Saved hotkey and delay config
-│   │   └── reload.py                   # Tkinter GUI: bind hotkey to 3L+1R mouse combo
+│   │   └── reload.py                   # Tkinter GUI: bind hotkey to 2L+1R mouse combo
 │   └── Subnortica/
 │       └── subnortica.py               # Tkinter GUI: toggle auto-clicker with overlay
 │
 ├── GetProjectCode/
-│   └── command.txt                     # PowerShell one-liner reference for code dumping
+│   └── command.txt                     # Two PowerShell code-dumping pipelines (one-liner + multi-line variant)
 │
 ├── NumpadMouse/
 │   ├── Numpad_As_Mouse.py              # Numpad mouse controller (standard version)
@@ -76,15 +84,15 @@ Utilities/
 │   ├── build_exe.bat                   # PyInstaller build script
 │   ├── dr_broken_display.ico           # Application icon
 │   ├── dr_broken_display_logo.png      # Application logo
-│   ├── DrBrokenDisplay.spec            # PyInstaller spec (release, no console)
-│   ├── DrBrokenDisplay_dbg.spec        # PyInstaller spec (debug, with console)
+│   ├── DrBrokenDisplay.spec            # PyInstaller spec, release, no console. LOCAL ONLY: *.spec is git-ignored and this file is not tracked
+│   ├── DrBrokenDisplay_dbg.spec        # PyInstaller spec, debug, console. LOCAL ONLY: *.spec is git-ignored and this file is not tracked
 │   ├── launch.bat                      # Launcher batch script
 │   ├── launch_mouse_preview.bat        # Alternative launcher
 │   ├── mouse_preview.py                # Main application: Dr Broken Display
-│   ├── mouse_preview_settings.json     # Sample settings file (runtime-generated)
+│   ├── mouse_preview_settings.json     # Orphan: never read or written by the code, git-ignored, not tracked. The real settings file is dr_broken_display_settings.json in ~/Downloads
 │   ├── requirements.txt                # Python dependencies for Dr Broken Display
 │   ├── setup.bat                       # One-command dependency installer
-│   ├── test_comprehensive.py           # ~828 unittest-style tests (691 scenarios)
+│   ├── test_comprehensive.py           # 421 unittest-style tests across 28 scenario classes
 │   └── tests/                          # Pytest-based modular test suite
 │       ├── __init__.py                 # Package marker
 │       ├── conftest.py                 # Shared fixtures, mocks, utilities (214 lines)
@@ -113,10 +121,10 @@ Utilities/
 |------|-------|---------|
 | `SEE_SCREEN/mouse_preview.py` | 573 | Dr Broken Display — real-time cursor preview with settings panel, auto-hide, drag repositioning, and 3 auto-save mechanisms |
 | `SEE_SCREEN/tests/conftest.py` | 214 | Pytest fixtures: mock tkinter classes, `app()` fixture, `make_app()` helper, `settings_file` fixture |
-| `SEE_SCREEN/test_comprehensive.py` | 3,627 | Comprehensive unittest suite: 691 test scenarios across 15+ scenario classes |
+| `SEE_SCREEN/test_comprehensive.py` | 3,627 | Comprehensive unittest suite: 421 test methods across 28 scenario classes |
 | `NumpadMouse/Numpad_As_Mouse.py` | 331 | Standard numpad mouse controller |
 | `NumpadMouse/mouse_with_log.py` | 537 | Fail-safe numpad mouse with logging, health checks, auto-recovery |
-| `Games/House of death/reload.py` | 138 | Mouse combo (3L+1R) hotkey binder |
+| `Games/House of death/reload.py` | 138 | Mouse combo (2L+1R) hotkey binder |
 | `Games/Subnortica/subnortica.py` | 213 | Mouse spammer with dual-channel toggling and overlay |
 | `CreateOpenAKH/main.ahk` | 98 | AutoHotkey file creator & editor launcher |
 | `Win_Off_Shortcuts/Opctions.bat` | 50 | Interactive system power management menu |
@@ -166,7 +174,7 @@ All tools are **standalone, single-file scripts** with no shared runtime or inte
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │  Auto-Hide Logic                                     │   │
 │  │  ├── Cursor enters overlay → hide preview            │   │
-│  │  ├── Show blue handle (6-dot grip) at bottom-right   │   │
+│  │  ├── Show a grey handle (grey 6-dot grip) at bottom-right   │   │
 │  │  ├── Drag handle to reposition                       │   │
 │  │  └── Cursor leaves both → restore preview            │   │
 │  └──────────────────────────────────────────────────────┘   │
@@ -182,38 +190,38 @@ All tools are **standalone, single-file scripts** with no shared runtime or inte
 ### Input Event Architecture (Numpad Mouse & Game Tools)
 
 ```
-┌──────────┐      ┌──────────────┐      ┌──────────────────┐
-│  pynput   │ ──►  │  Event       │ ──►  │  Win32 API      │
-│  /keyboard│      │  Handlers    │      │  (ctypes)       │
-│  library  │      │  (callbacks) │      │  mouse_event()  │
-└──────────┘      └──────────────┘      └──────────────────┘
-                        │                        │
-                        ▼                        ▼
-                   ┌──────────────┐      ┌──────────────────┐
-                   │  Tkinter GUI  │      │  Mouse cursor    │
-                   │  (status,     │      │  movement/click  │
-                   │   settings)   │      │  on screen       │
-                   └──────────────┘      └──────────────────┘
+┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+│  pynput       │  ──►  │  Event        │  ──►  │  Dispatch     │
+│  /keyboard    │  ──►  │  Handlers     │  ──►  │  pynput.mouse │
+│  library      │  ──►  │  (callbacks)  │  ──►  │  or Win32 API │
+└───────────────┘      └───────────────┘      └───────────────┘
+                               │                      │
+                               ▼                      ▼
+                   ┌───────────────┐      ┌───────────────┐
+                   │  Tkinter GUI  │      │  Mouse cursor │
+                   │  (status      │      │  movement/click│
+                   │  settings)    │      │  on screen    │
+                   └───────────────┘      └───────────────┘
 ```
 
-- `pynput` / `keyboard` libraries capture global keyboard and mouse events.
+- `pynput` (the two Games tools and Dr Broken Display) captures global keyboard and mouse events; `keyboard` (NumpadMouse) captures keys only, and NumpadMouse synthesises all of its mouse output itself through `ctypes.windll.user32.mouse_event()`.
 - Event callbacks toggle state flags or trigger actions.
 - A dedicated background thread continuously polls the state flags and dispatches Win32 mouse events via `ctypes.windll.user32.mouse_event()`.
-- Tkinter provides a minimal always-on-top status window (bottom-right corner) and configuration UI.
+- Tkinter provides a minimal always-on-top status window (bottom-right corner). NumpadMouse has no configuration UI — its entire Tk surface is a single status label.
 
 ### Numpad Key Mapping
 
 | Numpad Key | Action                | Modifier Effects                                      |
 |------------|-----------------------|-------------------------------------------------------|
-| 8          | Move up               | Caps Lock = slow (1px), Shift = fast (4px), Normal = 12px |
-| 5 (or 2)   | Move down             | Same as above                                         |
+| 8          | Move up               | Caps Lock = 1 px/step (slowest), Shift = 4 px/step, no modifier = 12 px/step (fastest); Caps Lock overrides Shift |
+| 5          | Move down             | Same as above                                         |
 | 4          | Move left             | Same as above                                         |
 | 6          | Move right            | Same as above                                         |
 | 7          | Left click            | Rapid press within 0.3s = double-click                |
 | 9          | Right click           | Rapid press within 0.3s = double-click                |
 | 2          | Middle click          | Press and hold = hold, release = release              |
-| 1          | Scroll down           | Shift = faster scroll speed                           |
-| 3          | Scroll up             | Shift = faster scroll speed                           |
+| 1          | Scroll down           | Numpad_As_Mouse.py: Shift = 60, otherwise 30 per step. mouse_with_log.py: fixed 30, Shift has no effect |
+| 3          | Scroll up             | Numpad_As_Mouse.py: Shift = 60, otherwise 30 per step. mouse_with_log.py: fixed 30, Shift has no effect |
 | F9         | Toggle on/off         | —                                                     |
 
 ### Power Management Flow
@@ -239,7 +247,7 @@ All tools are **standalone, single-file scripts** with no shared runtime or inte
 
 ### Games / `reload.py` (Mouse Combo)
 
-- **Responsibility**: Execute a rapid 3-left-click + 1-right-click combo when a user-configured hotkey is pressed.
+- **Responsibility**: Execute a rapid 2-left-click + 1-right-click combo when a user-configured hotkey is pressed.
 - **Input**: Global keyboard or mouse button event.
 - **Output**: Simulated mouse clicks at the current cursor position.
 - **Dependencies**: `pynput`, `tkinter`.
@@ -268,7 +276,7 @@ All tools are **standalone, single-file scripts** with no shared runtime or inte
 - **Responsibility**: Same as `Numpad_As_Mouse.py` but with comprehensive error handling, logging, and self-recovery.
 - **Key Differences**:
   - File + console logging to `mouse_movement.log`.
-  - `safe_execute()` wrapper around every operation.
+  - `safe_execute()` wrapper on the toggle, hotkey, forced-restart and shutdown paths (the per-key handlers and mouse loop use their own internal `try`/`except`).
   - `check_keyboard_library_health()` periodically verifies the `keyboard` library is functional.
   - `reset_all_states()` releases stuck mouse buttons on error.
   - Max recovery attempts (10) before force-restart toggle.
@@ -284,14 +292,14 @@ All tools are **standalone, single-file scripts** with no shared runtime or inte
 - **Settings** (persisted to `~/Downloads/dr_broken_display_settings.json`):
   - `preview_size`: 50–500 px (clamped on load)
   - `position`: bottom-left, bottom-right, top-left, top-right
-  - `zoom`: 0.25× – 4× (20 discrete steps)
+  - `zoom`: 0.25× – 4× (20 steps in `ZOOM_STEPS`; the settings dropdown offers 11 of them)
   - `window_x` / `window_y`: custom drag position (validated against monitor bounds)
 - **Hotkeys**:
   - `Ctrl+Alt+Scroll` — Resize preview (±20 px per scroll notch)
   - `Shift+Alt+Scroll` — Change zoom (steps through ZOOM_STEPS list)
   - `Escape` or `Alt+F4` — Quit (saves settings)
   - `Right-click` — Toggle settings panel
-- **Auto-hide**: Preview hides when the cursor hovers over it, showing a draggable blue 6-dot grip handle. The handle allows manual repositioning. Restores when cursor leaves both overlay area and handle.
+- **Auto-hide**: Preview hides when the cursor hovers over it, showing a draggable grey 6-dot grip handle. The handle allows manual repositioning. Restores when cursor leaves both overlay area and handle.
 - **Auto-save**:
   1. Every 100 frames (~3.3 seconds) — periodic background save
   2. On drag end — position saved immediately
@@ -299,6 +307,19 @@ All tools are **standalone, single-file scripts** with no shared runtime or inte
 - **Settings validation**: All loaded values are type-checked. Non-numeric window positions are discarded. Zoom ≤ 0 falls back to 1.0. Preview size clamped to [50, 500].
 - **Version**: 1.1.0
 - **App Name**: Dr Broken Display
+
+---
+
+### BatteryChargeIndigater / `Time_Battry_info.py`
+
+- **Responsibility**: Show the current time and battery level in a small overlay.
+- **Input**: Left mouse drag to reposition. No configuration UI.
+- **Output**: A borderless, always-on-top window in the bottom-left corner, 70% opacity, refreshed every 1000 ms.
+- **Dependencies**: `tkinter` and `psutil`.
+- **Time format**: 12-hour, no AM/PM, leading zero stripped (13:05 renders as `1:05`).
+- **Battery format**: Whole-number percent, truncated not rounded, with a `+` appended while the machine reports it is plugged in. Shows `--` when psutil cannot supply a percentage. `psutil` is a hard requirement: without it the script raises `ModuleNotFoundError` at import rather than degrading.
+- **Window size**: Computed once at startup from the widest text it can display; it never re-measures, so a font or DPI change afterwards leaves the old size.
+- **Limitations**: Dragging is not clamped to the screen, so the overlay can be moved off-screen with no menu, tray icon or keyboard shortcut to bring it back. Restarting the process is the only recovery.
 
 ---
 
@@ -317,18 +338,18 @@ pytest tests/
 
 | Module | Tests | Coverage |
 |--------|-------|----------|
-| `test_capture.py` | 11 | Capture area sizing, zoom levels, crosshair positioning |
-| `test_closing.py` | 11 | Quit saves settings, auto-save counter, double-quit safety |
-| `test_drag.py` | 22 | Drag math, click-without-drag, rapid drag, different sizes |
-| `test_edge_cases.py` | 27 | Auto-position math (6 resolutions), constants, operation sequences, capture extremes |
-| `test_error_handling.py` | 20 | Corrupt JSON, empty files, null values, overlap edge cases |
-| `test_first_run.py` | 18 | Missing file, corrupt data, partial/defaults, type coercion |
-| `test_multi_monitor.py` | 16 | Monitor selection (2–4 monitors), arrangement changes, negative coords |
-| `test_overlap.py` | 32 | Overlap detection on 4 resolutions, multi-monitor, exhaustive grid |
-| `test_overlay.py` | 16 | Hide/show cursor interaction, handle positions, state tracking |
-| `test_persistence.py` | 27 | Save/load/roundtrip for 20 positions, directory edge cases |
-| `test_settings.py` | 28 | Settings toggle, size/position/zoom changes, interaction with overlay |
-| `test_shortcuts.py` | 14 | Scroll resize, scroll zoom, Escape/Alt+F4 bindings |
+| `test_capture.py` | 21 | Capture area sizing, zoom levels, crosshair positioning |
+| `test_closing.py` | 13 | Quit saves settings, auto-save counter, double-quit safety |
+| `test_drag.py` | 25 | Drag math, click-without-drag, rapid drag, different sizes |
+| `test_edge_cases.py` | 39 | Auto-position math (6 resolutions), constants, operation sequences, capture extremes |
+| `test_error_handling.py` | 24 | Corrupt JSON, empty files, null values, overlap edge cases |
+| `test_first_run.py` | 20 | Missing file, corrupt data, partial/defaults, type coercion |
+| `test_multi_monitor.py` | 21 | Monitor selection (2–4 monitors), arrangement changes, negative coords |
+| `test_overlap.py` | 45 | Overlap detection on 4 resolutions, multi-monitor, exhaustive grid |
+| `test_overlay.py` | 19 | Hide/show cursor interaction, handle positions, state tracking |
+| `test_persistence.py` | 34 | Save/load/roundtrip for 20 positions, directory edge cases |
+| `test_settings.py` | 34 | Settings toggle, size/position/zoom changes, interaction with overlay |
+| `test_shortcuts.py` | 20 | Scroll resize, scroll zoom, Escape/Alt+F4 bindings |
 
 ### Comprehensive Unittest Suite (`SEE_SCREEN/test_comprehensive.py`)
 
@@ -339,7 +360,7 @@ cd SEE_SCREEN
 python test_comprehensive.py
 ```
 
-Contains approximately 828 test methods across 15+ scenario classes covering real-world black-box user scenarios including save/load edge cases, multi-monitor depth, extreme overlap, zoom/capture edge cases, settings panel interactions, operation sequences, simultaneous operations, monitor arrangement changes, and miscellaneous edge cases.
+Contains 421 test methods across 28 scenario classes covering real-world black-box user scenarios including save/load edge cases, multi-monitor depth, extreme overlap, zoom/capture edge cases, settings panel interactions, operation sequences, simultaneous operations, monitor arrangement changes, and miscellaneous edge cases.
 
 ---
 
@@ -347,7 +368,7 @@ Contains approximately 828 test methods across 15+ scenario classes covering rea
 
 This project does not consume any external web APIs. All functionality is implemented via:
 
-- **Win32 API** (`user32.dll`) — Mouse control (movement, clicks, scroll) via `ctypes.windll.user32.mouse_event()` and `GetKeyState()`. Used by `NumpadMouse/` and `mouse_with_log.py`.
+- **Win32 API** (`user32.dll`) — Mouse control (movement, clicks, scroll) via `ctypes.windll.user32.mouse_event()` and `GetKeyState()`. Used by both tools in `NumpadMouse/`.
 - **`shutdown.exe`** — System shutdown, restart, and logoff commands. Used by `Win_Off_Shortcuts/`.
 - **`rundll32.exe`** — System sleep via `powrprof.dll,SetSuspendState`. Used by `Opctions.bat`.
 
@@ -372,7 +393,7 @@ Not applicable. No database is used.
 | File | Tool | Purpose |
 |------|------|---------|
 | `Games/House of death/mouse_combo_config.json` | reload.py | Stores bound hotkey and click delay |
-| `mouse_spammer_config.json` (auto-created in tool directory) | subnortica.py | Stores left/right hotkeys and delays |
+| `mouse_spammer_config.json` (auto-created in the current working directory) | subnortica.py | Stores left/right hotkeys and delays |
 | `~/Downloads/dr_broken_display_settings.json` | mouse_preview.py | Stores size, position, zoom, custom position |
 | `mouse_movement.log` (auto-created) | mouse_with_log.py | Runtime log file |
 
@@ -398,8 +419,8 @@ Not applicable. No database is used.
 
 ### `.gitignore` Files
 
-- **Root**: Ignores `chat_openrouter.py`.
-- **SEE_SCREEN**: Ignores `__pycache__/`, `*.pyc`, `build/`, `dist/`, `*.spec`, and `mouse_preview_settings.json` (runtime-generated settings).
+- **Root**: Ignores `chat_openrouter.py` and the `.opencode/` audit scratch directory.
+- **SEE_SCREEN**: Ignores `__pycache__/`, `*.pyc`, `build/`, `dist/`, `*.spec`, and `mouse_preview_settings.json` (an orphan; the app writes `~/Downloads/dr_broken_display_settings.json` instead).
 
 ---
 
@@ -409,12 +430,13 @@ Not applicable. No database is used.
 
 | Package | Used In | Purpose |
 |---------|---------|---------|
-| `pynput` | reload.py, subnortica.py, mouse_preview.py | Global keyboard/mouse event listeners |
+| `pynput` (>=1.7.0) | reload.py, subnortica.py, mouse_preview.py | Global keyboard/mouse event listeners |
 | `keyboard` | Numpad_As_Mouse.py, mouse_with_log.py | Global keyboard hooking and suppression |
 | `mss` (≥9.0.0) | mouse_preview.py | High-performance screen capture |
 | `Pillow` (≥10.0.0) | mouse_preview.py | Image resizing (LANCZOS), drawing crosshair |
 | `pyautogui` (≥0.9.0) | mouse_preview.py | Cursor position polling |
 | `pyinstaller` (≥6.0.0) | build_exe.bat | Bundling Python scripts into standalone EXE |
+| `psutil` | BatteryChargeIndigater/Time_Battry_info.py | Battery percentage via `sensors_battery()` |
 | `ctypes` | Numpad_As_Mouse.py, mouse_with_log.py | Win32 API access for mouse events |
 | `tkinter` | All Python tools | GUI framework (built-in to Python 3) |
 | `threading` | All Python tools | Background threads for input + GUI |
@@ -434,7 +456,7 @@ Not applicable. No database is used.
 
 ### Prerequisites
 
-- Python 3.8+ (for all Python-based tools)
+- Python 3.8+ (for all Python-based tools; developed against 3.14)
 - AutoHotkey (for `CreateOpenAKH/main.ahk`)
 - Windows OS (all tools use Windows-specific APIs)
 
@@ -457,7 +479,7 @@ pip install -r requirements.txt
 Install their specific dependencies:
 
 ```batch
-pip install pynput pillow pyautogui mss keyboard
+pip install pynput pillow pyautogui mss keyboard psutil
 ```
 
 ### AutoHotkey Script
@@ -503,7 +525,7 @@ python reload.py
 ```
 
 1. Click **Set** and press the desired hotkey (keyboard or mouse button).
-2. Adjust delay if needed.
+2. The delay is persisted to config but not applied — the combo always uses a fixed 0.01 s between clicks.
 3. Click **SAVE SETTINGS**.
 4. Press the bound hotkey anywhere to execute the combo.
 
@@ -517,7 +539,7 @@ python subnortica.py
 1. Click **Set** for Left Click or Right Click and press the desired hotkey.
 2. Adjust delays if needed.
 3. Click **SAVE SETTINGS**.
-4. Press the bound hotkeys to toggle each channel on/off.
+4. Press the bound hotkeys to toggle each channel on/off. Both channels must be bound before **SAVE SETTINGS** accepts them; otherwise it refuses with `Set both keys first`.
 5. Status shown in the corner overlay (LEFT / RIGHT / L+R / NONE).
 
 ### File Creator & Editor Launcher
@@ -538,6 +560,16 @@ Opctions.bat       # interactive menu
 Shutdownnow.bat    # immediate shutdown
 restart.bat        # immediate restart
 ```
+
+### Clock & Battery Overlay
+
+```batch
+cd BatteryChargeIndigater
+Run_clock.bat                    # Windows launcher
+python Time_Battry_info.py       # or run the script directly
+```
+
+Requires `pip install psutil`. Drag with the left mouse button. See `BatteryChargeIndigater/README.md` for detail.
 
 ### Build EXE (Dr Broken Display)
 
@@ -566,8 +598,8 @@ python test_comprehensive.py
 
 1. **User launches a script** — Each tool is a single-file script (Python, AutoHotkey, or Batch) that runs directly.
 2. **GUI appears** (for most tools) — Tkinter creates a small always-on-top window for status and settings.
-3. **Global hooks register** — `pynput` or `keyboard` library intercepts key/mouse events system-wide.
-4. **Background thread polls state** — A daemon thread continuously checks the tool's internal state flags and dispatches Win32 mouse events via `ctypes`.
+3. **Global hooks register** (NumpadMouse and the two Games tools; the clock overlay registers no global hook) — `pynput` or `keyboard` library intercepts key/mouse events system-wide.
+4. **Background thread polls state** — In NumpadMouse a daemon thread checks state flags and dispatches Win32 mouse events via `ctypes`; the two Games tools use `pynput.mouse.Controller()` instead.
 5. **User configures via GUI** — Hotkeys, delays, and visual settings are adjustable through the Tkinter interface.
 6. **Config persists to JSON** — On save, settings are written to a JSON file in the tool's directory or the user's Downloads folder.
 7. **User toggles on/off** — Pressing the toggle hotkey (e.g., F9 for Numpad Mouse, or configured hotkeys for spammer/combo) enables or disables the tool's effect.
