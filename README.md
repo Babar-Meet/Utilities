@@ -578,6 +578,41 @@ If you use Notepad++ or Sublime Text instead, point all four `Run,` lines at tha
 executable — the shortcuts work the same with any editor. To confirm a path before
 editing the script, paste it into Explorer's address bar; if the file opens, it is right.
 
+#### Where editors are usually installed
+
+Open any of these folders in Explorer and see what you already have. This is the quickest
+way to find your path — you are looking for the `.exe` inside each folder.
+
+**Editors used by this script:**
+
+| Editor | Look in |
+|--------|---------|
+| VS Code | `C:\AppData\Local\Programs\Microsoft VS Code` |
+| VS Code (system install) | `C:\Program Files\Microsoft VS Code` |
+| Windsurf | `C:\AppData\Local\Programs\Windsurf` |
+
+`%LOCALAPPDATA%` is `C:\Users\<your-username>\AppData\Local` and
+`%ProgramFiles%` is usually `C:\Program Files`. Both open directly in Explorer's
+address bar.
+
+**Any other editor works too.** These are the same locations people usually install to:
+
+| Editor | Look in |
+|--------|---------|
+| Notepad++ | `C:\Program Files\Notepad++` |
+| Sublime Text | `C:\Program Files\Sublime Text` |
+| Notepad (built in) | `C:\Windows\System32` — open `notepad.exe` |
+| WordPad (built in) | `C:\Program Files\Windows NT\Accessories\wordpad.exe` |
+| Git Bash | `C:\Program Files\Git\bin\bash.exe` |
+
+**Fastest way to find any program:** press **Win+R**, paste the folder you want to check,
+and press Enter. If Explorer opens it, the folder exists; if the path is wrong you get a
+Windows error, which tells you it is not there. Then right-click the `.exe` → **Open file
+location** to get the real path.
+
+Once you have found your editor's `.exe`, open `main.ahk` in a text editor and replace the
+four `Run,` paths with it. Then run the script.
+
 The script also needs AutoHotkey v1.1+. Double-click `main.ahk`, or right-click it and
 choose **Run with AutoHotkey**. An error dialog means AutoHotkey is missing.
 
