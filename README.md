@@ -243,7 +243,7 @@ All tools are **standalone, single-file scripts** with no shared runtime or inte
 - **Input**: Keyboard hotkey (Win+N, Win+O, Win+Shift+N, Win+Shift+O); file name from InputBox; selected file path via clipboard.
 - **Output**: New empty file created in the active Explorer folder; file opened in the appropriate editor.
 - **Dependencies**: AutoHotkey runtime; VS Code / Windsurf installed at hardcoded paths.
-- **Limitations**: Editor paths are hardcoded to a specific user profile.
+- **Limitations**: Editor paths are hardcoded to the machine the script was written on. See [Set up on your own PC](#set-up-on-your-own-pc).
 
 ### Games / `reload.py` (Mouse Combo)
 
@@ -448,7 +448,7 @@ Not applicable. No database is used.
 ### Runtime Dependencies
 
 - **AutoHotkey** — Required by `main.ahk`.
-- **VS Code** / **Windsurf** — Required by hotkey shortcuts in `main.ahk` (paths are hardcoded to `C:\Users\meet\AppData\Local\Programs\...`).
+- **VS Code** / **Windsurf** — Required by hotkey shortcuts in `main.ahk`. The paths in the script belong to the machine it was written on and must be changed to yours; see [Set up on your own PC](#set-up-on-your-own-pc). Any editor works, including Notepad++ and Sublime Text.
 
 ---
 
@@ -551,6 +551,36 @@ python subnortica.py
 # Win+Shift+N     → New file in Windsurf
 # Win+Shift+O     → Open selected file in Windsurf
 ```
+
+#### Set up on your own PC
+
+`main.ahk` ships with the editor paths filled in for the machine it was written on:
+
+```
+C:\Users\meet\AppData\Local\Programs\Microsoft VS Code\Code.exe
+C:\Users\meet\AppData\Local\Programs\Windsurf\Windsurf.exe
+```
+
+Those paths will not exist on your machine, so **open `main.ahk` and change them to
+yours before running it.** Only those four `Run,` lines need editing.
+
+Find your editor's executable:
+
+| Editor | Default path |
+|--------|---------------|
+| VS Code | `%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe` |
+| VS Code (system install) | `%ProgramFiles%\Microsoft VS Code\Code.exe` |
+| Windsurf | `%LOCALAPPDATA%\Programs\Windsurf\Windsurf.exe` |
+| Notepad++ | `%ProgramFiles%\Notepad++\notepad++.exe` |
+| Sublime Text | `%ProgramFiles%\Sublime Text\sublime_text.exe` |
+
+If you use Notepad++ or Sublime Text instead, point all four `Run,` lines at that one
+executable — the shortcuts work the same with any editor. To confirm a path before
+editing the script, paste it into Explorer's address bar; if the file opens, it is right.
+
+The script also needs AutoHotkey v1.1+. Double-click `main.ahk`, or right-click it and
+choose **Run with AutoHotkey**. An error dialog means AutoHotkey is missing.
+
 
 ### System Power Shortcuts
 
